@@ -25,6 +25,9 @@ router.post("/:id",verifyToken,async(req,res)=>{
             res.status(400).send("could not verify token...")
         }else{
           try{
+              if(!req.body.comment){
+                  res.status(400).send("Please add Text to comment for commenting...")
+            }else{
              const commentId=new mongoose.Types.ObjectId().toString()
              await Post.updateOne(
              {_id:req.params.id},
@@ -38,6 +41,7 @@ router.post("/:id",verifyToken,async(req,res)=>{
                 }})
 
                 res.status(200).json({"CommentId":commentId})
+              }
             }catch(err){
                 res.status(500).send(err)
             }

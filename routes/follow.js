@@ -26,7 +26,11 @@ router.post("/:id",verifyToken,async(req,res)=>{
             res.status(400).send("could not verify token...")
         }else{
             try{
-            const updatedFollower=await User.updateOne({ _id: authData.user._id }, { $push: { following: req.params.id } })
+            const updatedFollower=await User.updateOne({
+                _id: authData.user._id,
+                following:{ $ne:req.params.id}},
+                { $push: { following: req.params.id }
+                })
             res.status(200).json(updatedFollower)
             }catch(err){
                 res.status(500).send(err)

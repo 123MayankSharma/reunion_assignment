@@ -25,6 +25,9 @@ router.post("/",verifyToken,async(req,res)=>{
             res.status(400).send("could not verify token...")
         }else{
             try{
+                if(!req.body.title||!req.body.desc){
+                    res.status(400).send("Title or Description is missing...")
+                }else{
                 const post=new Post({
                     created_by:authData.user.username,
                     title:req.body.title,
@@ -33,6 +36,7 @@ router.post("/",verifyToken,async(req,res)=>{
                 })
                 const newPost=await post.save()
                 res.status(200).json({"post_id":newPost._id,"title":newPost.title,"desc":newPost.desc,"created_at":newPost.createdAt})
+                }
             }catch(err){
                 res.status(500).send(err)
             }
@@ -64,9 +68,13 @@ router.get("/:id",verifyToken,async(req,res)=>{
             res.status(400).send("could not verify token...")
         }else{
             try{
-                console.log(req.params.id)
                 const post=await Post.findOne({_id:req.params.id})
-                res.status(200).json(post)
+
+                const requiredPost={
+                    likes:post.likeCount,
+                    comments:post.comments
+                }
+                res.status(200).json(requiredPost)
             }catch(err){
                 res.status(500).send(err)
             }

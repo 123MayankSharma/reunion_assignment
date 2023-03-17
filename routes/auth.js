@@ -5,23 +5,14 @@ const User=require("../models/user")
 const jwt=require("jsonwebtoken")
 
 
-const verifyToken=(req,res,next)=>{
-    const bearerHeader=req.headers['authorization']
-    if(typeof bearerHeader!== 'undefined'){
-        const bearer=bearerHeader.split(" ")
-        const token=bearer[1]
-        req.token=token
-        next()
-    }else{
-        res.status(400).send("Not able to verfy the user.")
-    }
-}
 
 router.post("/register",async(req,res)=>{
     try{
+        if(!req.body.password||!req.body.username||!req.body.email){
+            res.status(400).send("one of the input fields is missing...")
+        }else{
         //generate hashed password
-        const salt=await bcrypt.genSalt(10)
-        const hashedPassword=await bcrypt.hash(req.body.password,salt)
+        const hashedPassword=await bcrypt.hash(req.body.password,10)
         const newUser=new User({
             username:req.body.username,
             email:req.body.email,
@@ -29,29 +20,40 @@ router.post("/register",async(req,res)=>{
         })
         const user=await newUser.save()
         res.status(200).json(user)
+      }
     }catch(err){
+        console.log(err)
         res.status(500).send(err)
     }
 })
 
 router.post("/",async (req,res)=>{
     try{
-    const user=await User.findOne({email:req.body.email})
+     if(!req.body.password||!req.body.email){
+            return res.status(400).send("one of the input fields is missing...")
+        }else{
+          const user=await User.findOne({email:req.body.email})
 
-    //if user is not found
-    if(!user) res.status(400).json("Entered Username or Password is Incorrect!")
+        //if user is not found
+        if(!user) return res.status(400).json({"Error":"Entered email or Password is Incorrect!"})
 
-    //then, validate the password
-    const validatePassword=bcrypt.compare(req.body.password,user.password)
+        //then, validate the password
+        const validatePassword=await bcrypt.compare(req.body.password,user.password)
 
-    //if password of user stored in db does not match password entered by client return client error
-    if(!validatePassword) res.status(400).json("Entered Username or Password is Incorrect!")
+        //if password of user stored in db does not match password entered by client return client error
 
-    jwt.sign({user},process.env.SECRET_KEY,{expiresIn:'11000s'},(err,token)=>{
-            res.status(200).json({token})
-    })
-
-
+      if(validatePassword)
+      {
+          jwt.sign({user},process.env.SECRET_KEY,{expiresIn:'11000s'},(err,token)=>{
+            if(err){
+                return res.status(500).json({"error":"backend error..."})
+            }
+            return res.status(200).json({token})
+        })
+      }else{
+          return res.status(400).json({"Error":"Email or Password is Incorrect"})
+      }
+    }
 
     }catch(err){
         res.status(500).json(err)
